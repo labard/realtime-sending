@@ -1,27 +1,6 @@
 allprojects {
-    apply plugin: 'maven-publish'
-
     group 'ru.at-consulting.dmp.realtime-sending'
     version '1.0-SNAPSHOT'
-
-    publishing {
-        repositories.maven {
-            url 'https://toolset.at-consulting.ru/artifactory/pub-snapshot-local'
-            credentials {
-                /**
-                 * add to ~/.gradle/gradle.properties
-                 * atcUsername=username
-                 * atcPassword=password
-                 */
-                username atcUsername
-                password atcPassword
-            }
-        }
-
-        publications {
-            publication(MavenPublication) {}
-        }
-    }
 }
 
 subprojects {
@@ -43,21 +22,21 @@ subprojects {
     }
 
     ext.vers = [
-            ignite: '1.7.0',
-            scala: '2.11',
-            kafka: '0.10.0.0-cp1',
+            ignite   : '1.7.0',
+            scala    : '2.11',
+            kafka    : '0.10.0.0-cp1',
             confluent: '3.0.0'
     ]
 
     ext.deps = [
-            ignite: [
+            ignite   : [
                     compile: [
                             "org.apache.ignite:ignite-core:$vers.ignite",
                             "org.apache.ignite:ignite-spring:$vers.ignite",
                             "org.apache.ignite:ignite-indexing:$vers.ignite",
                             "org.apache.ignite:ignite-log4j2:$vers.ignite"
                     ],
-                    test: [
+                    test   : [
                             'ru.at-consulting.dmp:ignite-test:1.0-SNAPSHOT'
                     ]
 
@@ -67,7 +46,7 @@ subprojects {
                             "org.apache.kafka:kafka_$vers.scala:$vers.kafka",
                             "io.confluent:kafka-avro-serializer:$vers.confluent"
                     ],
-                    test: [
+                    test   : [
                             'ru.at-consulting.dmp:confluent-test:1.0-SNAPSHOT'
                     ]
             ]
@@ -95,8 +74,8 @@ subprojects {
                     asNode().dependencies.'*'.findAll() {
                         it.scope.text() == 'runtime' &&
                                 project.configurations.provided.allDependencies.find { dependence ->
-                            dependence.name == it.artifactId.text()
-                        }
+                                    dependence.name == it.artifactId.text()
+                                }
                     }.each() {
                         it.scope*.value = 'provided'
                     }
