@@ -1,0 +1,118 @@
+allprojects {
+    apply plugin: 'maven-publish'
+
+    group 'ru.at-consulting.dmp.realtime-sending'
+    version '1.0-SNAPSHOT'
+
+    publishing {
+        repositories.maven {
+            url 'https://toolset.at-consulting.ru/artifactory/pub-snapshot-local'
+            credentials {
+                /**
+                 * add to ~/.gradle/gradle.properties
+                 * atcUsername=username
+                 * atcPassword=password
+                 */
+                username atcUsername
+                password atcPassword
+            }
+        }
+
+        publications {
+            publication(MavenPublication) {}
+        }
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'groovy'
+    apply plugin: 'idea'
+
+    repositories {
+        maven {
+            url 'https://toolset.at-consulting.ru/artifactory/pub-release-local'
+        }
+        maven {
+            url 'https://toolset.at-consulting.ru/artifactory/pub-snapshot-local'
+        }
+        maven {
+            url 'http://packages.confluent.io/maven/'
+        }
+        jcenter()
+    }
+
+    ext.vers = [
+            ignite: '1.7.0',
+            scala: '2.11',
+            kafka: '0.10.0.0-cp1',
+            confluent: '3.0.0'
+    ]
+
+    ext.deps = [
+            ignite: [
+                    compile: [
+                            "org.apache.ignite:ignite-core:$vers.ignite",
+                            "org.apache.ignite:ignite-spring:$vers.ignite",
+                            "org.apache.ignite:ignite-indexing:$vers.ignite",
+                            "org.apache.ignite:ignite-log4j2:$vers.ignite"
+                    ],
+                    test: [
+                            'ru.at-consulting.dmp:ignite-test:1.0-SNAPSHOT'
+                    ]
+
+            ],
+            confluent: [
+                    compile: [
+                            "org.apache.kafka:kafka_$vers.scala:$vers.kafka",
+                            "io.confluent:kafka-avro-serializer:$vers.confluent"
+                    ],
+                    test: [
+                            'ru.at-consulting.dmp:confluent-test:1.0-SNAPSHOT'
+                    ]
+            ]
+    ]
+
+    configurations {
+        all {
+            resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+        }
+        provided
+        compile.extendsFrom provided
+    }
+
+    dependencies {
+        testCompile 'org.codehaus.groovy:groovy-all:2.4.7'
+        testCompile 'org.spockframework:spock-core:1.1-groovy-2.4-rc-1'
+    }
+
+    publishing {
+        publications {
+            publication(MavenPublication) {
+                from components.java
+
+                pom.withXml {
+                    asNode().dependencies.'*'.findAll() {
+                        it.scope.text() == 'runtime' &&
+                                project.configurations.provided.allDependencies.find { dependence ->
+                            dependence.name == it.artifactId.text()
+                        }
+                    }.each() {
+                        it.scope*.value = 'provided'
+                    }
+                }
+            }
+        }
+    }
+
+    idea {
+        module {
+            downloadJavadoc = true
+        }
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.0'
+    distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-bin.zip"
+}
