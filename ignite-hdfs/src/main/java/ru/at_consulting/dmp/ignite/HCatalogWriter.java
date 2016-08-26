@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Created by DAIvanov on 26.08.2016.
  */
-class HCatalogWriter implements HiveWriter<String> {
+public class HCatalogWriter implements HiveWriter<String> {
     private static final Logger logger = LoggerFactory.getLogger(HCatalogWriter.class);
     private final HiveEndPoint hiveEP;
     private Integer nElementPerTransaction;
@@ -22,7 +22,6 @@ class HCatalogWriter implements HiveWriter<String> {
     private final RecordWriter recordWriter;
 
     HCatalogWriter(URL hiveConfigUrl, String metastoreUri, String dbName, String tableName, @Nullable List<String> partitionVals, String delimiter, Integer nElementPerTransaction) {
-        createTable();
         this.nElementPerTransaction = nElementPerTransaction;
         hiveEP = new HiveEndPoint(metastoreUri, dbName, tableName, partitionVals);
         Configuration conf = new Configuration();
@@ -36,7 +35,7 @@ class HCatalogWriter implements HiveWriter<String> {
         }
     }
 
-    private void createTable() {
+public static void createTable() {
         Utils utils = new Utils();
         try {
             utils.createTable("TableForCatalog.ddl");

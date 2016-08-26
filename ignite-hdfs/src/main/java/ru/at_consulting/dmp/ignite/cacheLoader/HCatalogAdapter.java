@@ -19,9 +19,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Consumer;
 
-public class SendingCacheStoreAdapter extends DummyAdapter {
+public class HCatalogAdapter extends DummyAdapter {
     private final HiveWriter<String> writer = Utils.getHCatalogWriter("TEST_FOR_HCATALOG", ";", 200);
-   // private final HiveWriter<String> writer = Utils.getFileSystemWriter();
 
     @IgniteInstanceResource
     protected Ignite ignite;

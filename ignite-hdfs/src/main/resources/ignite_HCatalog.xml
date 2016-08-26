@@ -17,7 +17,7 @@
                     </property>
                     <property name="cacheStoreFactory">
                         <bean class="javax.cache.configuration.FactoryBuilder" factory-method="factoryOf">
-                            <constructor-arg value="ru.at_consulting.dmp.ignite.cacheLoader.SendingCacheStoreAdapter"/>
+                            <constructor-arg value="ru.at_consulting.dmp.ignite.cacheLoader.HCatalogAdapter"/>
                         </bean>
                     </property>
                     <property name="readThrough" value="true"/>

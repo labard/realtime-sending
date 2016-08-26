@@ -1,5 +1,3 @@
 include 'ignite-model'
-include 'confluent-model'
-include 'ignite-model'
 include 'ignite-hdfs'
 

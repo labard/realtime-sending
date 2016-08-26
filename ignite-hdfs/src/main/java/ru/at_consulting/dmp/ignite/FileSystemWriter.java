@@ -1,10 +1,8 @@
 package ru.at_consulting.dmp.ignite;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FileUtil;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,18 +15,20 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Created by DAIvanov on 26.08.2016.
  */
-class FileSystemWriter implements HiveWriter<String> {
+public class FileSystemWriter implements HiveWriter<String> {
     private static final Logger logger = LoggerFactory.getLogger(HCatalogWriter.class);
     private final FileSystem fileSystem;
     private final String dirPath;
     private final URI uri;
     private final String hiveUrl;
+    private final CountDownLatch latch;
 
-    FileSystemWriter(URL configUrl, String dirPath, String hiveUrl) {
+    FileSystemWriter(URL configUrl, String dirPath, String hiveUrl, int nWriters) {
         this.dirPath = dirPath;
         this.hiveUrl = hiveUrl;
         Configuration conf = new Configuration();
@@ -39,27 +39,36 @@ class FileSystemWriter implements HiveWriter<String> {
             throw new IllegalStateException("Couldn't get filesystem", e);
         }
         uri = fileSystem.getUri();
-        createTables();
+        latch = new CountDownLatch(nWriters);
     }
-    private void createTables() {
+
+
+    public void createTables() {
         Utils utils = new Utils();
         try {
-            utils.createExternalTable("TempTable.ddl",dirPath);
+            utils.createExternalTable("TempTable.ddl", dirPath);
             utils.createTable("OrcTableForFileLoad.ddl");
         } catch (IOException e) {
-            throw new IllegalStateException("Couldn't create tables",e);
+            throw new IllegalStateException("Couldn't create tables", e);
         }
     }
 
 
     @Override
     public void write(List<String> data) throws Exception {
-            cleanDir(dirPath);
-            loadFile(data);
-            moveData();
+        final String pathString = getFullPath();
+        loadFile(data, pathString);
+        latch.countDown();
     }
 
-    private void cleanDir(String dirPath) throws IOException {
+    @NotNull
+    private String getFullPath() {
+        int base = (int) (Math.random() * 100000);
+        final String filePath = dirPath + "/tableFile" + base + ".txt";
+        return uri + filePath;
+    }
+
+    public void cleanDir() throws IOException {
         long start = System.currentTimeMillis();
         final Path rootPath = new Path(uri + dirPath);
         if (fileSystem.exists(rootPath)) {
@@ -72,16 +81,14 @@ class FileSystemWriter implements HiveWriter<String> {
         }
     }
 
-    private void loadFile(List<String> data) throws IOException {
+    private void loadFile(List<String> data, String path) throws IOException {
         long start = System.currentTimeMillis();
-        int base = (int) (Math.random() * 100000);
-        final String filePath = dirPath + "/tableFile" + base + ".txt";
-        final String pathString = uri + filePath;
-        final Path outFile = new Path(pathString);
+        final Path outFile = new Path(path);
         if (fileSystem.exists(outFile))
             System.out.println(("Output already exists"));
-        OutputStream out = fileSystem.create(outFile);
+        FSDataOutputStream out = fileSystem.create(outFile);
         loadData(out, data);
+        out.hsync();
         out.close();
         logger.info("Data load: " + (System.currentTimeMillis() - start));
     }
@@ -92,7 +99,7 @@ class FileSystemWriter implements HiveWriter<String> {
         out.write(builder.toString().getBytes());
     }
 
-    private void moveData() {
+    public void moveData() {
         long start = System.currentTimeMillis();
         try (final Connection connection = DriverManager.getConnection(hiveUrl);
              PreparedStatement statement = connection.prepareStatement("INSERT INTO TEST_FROM_FILESYSTEM SELECT * FROM TEMP_TABLE")) {
@@ -103,5 +110,7 @@ class FileSystemWriter implements HiveWriter<String> {
         logger.info("Data move: " + (System.currentTimeMillis() - start));
     }
 
-
+    public CountDownLatch getLatch() {
+        return latch;
+    }
 }
