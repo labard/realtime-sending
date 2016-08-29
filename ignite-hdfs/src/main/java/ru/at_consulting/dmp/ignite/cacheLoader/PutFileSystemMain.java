@@ -18,7 +18,7 @@ public class PutFileSystemMain {
             IgniteCache<RealtimeSending.Key, RealtimeSending> cache = ignite.getOrCreateCache("RealtimeSendings");
             for (int i = 0; i < 10; i++) {
                 //генерируем и кладём в кэш данные.
-                final Map<RealtimeSending.Key, RealtimeSending> data = UtilsFilesystem.getData(1000000);
+                final Map<RealtimeSending.Key, RealtimeSending> data = UtilsFilesystem.getData(1000);
                 cache.putAll(data);
                 //дожидаемся окончания записи в hadoop через файловую систему
                 // и соответственно во внешнюю таблицу(если метод write all выполняется синхронно

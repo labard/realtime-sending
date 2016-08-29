@@ -16,7 +16,7 @@ public class PutHCatalogMain {
         try (final Ignite ignite = Ignition.start("ignite_HCatalog.xml")) {
             IgniteCache<RealtimeSending.Key, RealtimeSending> cache = ignite.getOrCreateCache("RealtimeSendings");
             for (int i = 0; i < 10; i++) {
-                final Map<RealtimeSending.Key, RealtimeSending> data = Utils.getData(10000);
+                final Map<RealtimeSending.Key, RealtimeSending> data = Utils.getData(1000);
                 cache.putAll(data);
             }
         }
