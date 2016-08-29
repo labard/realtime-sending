@@ -8,10 +8,8 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import java.io.Serializable;
 
-/**
- * Created by DAIvanov on 26.08.2016.
- */
-public class DummyAdapter extends CacheStoreAdapter<RealtimeSending.Key, RealtimeSending> implements Serializable {
+
+class DummyAdapter extends CacheStoreAdapter<RealtimeSending.Key, RealtimeSending> implements Serializable {
     @Override
     public RealtimeSending load(RealtimeSending.Key key) throws CacheLoaderException {
         throw new UnsupportedOperationException("LOAD");

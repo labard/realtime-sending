@@ -5,6 +5,8 @@ import org.apache.hive.hcatalog.streaming.DelimitedInputWriter;
 import org.apache.hive.hcatalog.streaming.HiveEndPoint;
 import org.apache.hive.hcatalog.streaming.RecordWriter;
 import org.apache.hive.hcatalog.streaming.StreamingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -14,32 +16,34 @@ import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Created by DAIvanov on 25.08.2016.
- */
+
 public class Utils {
+    public static final String HIVE_URL = APProperties.get("HIVE_URL");
+    public static final String HADOOP_CONFIG_URL = APProperties.get("HADOOP_CONFIG_URL");
+    public static final String META_STORE_URL = APProperties.get("META_STORE_URL");
+    public static final String DB_NAME = APProperties.get("DB_NAME");
 
-    public static final String HIVE_URL = "jdbc:hive2://192.168.233.104:10000/sending";
-    public static final String DIR_NAME = "/realtimeSendingsDir";
-    public static final FileSystemWriter FILE_SYSTEM_WRITER = getFileSystemWriter();
-
-    public void createTable(String sql) throws IOException {
-        try (final Connection connection = DriverManager.getConnection(HIVE_URL);
-             PreparedStatement statement = connection.prepareStatement(IOUtils.toString(getClass().getClassLoader().getResourceAsStream(sql), StandardCharsets.UTF_8))) {
+    public void createTable(String sqlPath) throws IOException {
+        try (final Connection connection = DriverManager.getConnection(HIVE_URL+"/"+DB_NAME);
+             PreparedStatement statement = connection.prepareStatement(getSqlFromFile(sqlPath))) {
             statement.execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    public void createExternalTable(String sql, String dirPath) throws IOException {
-        try (final Connection connection = DriverManager.getConnection(HIVE_URL);
-             PreparedStatement statement = connection.prepareStatement(IOUtils.toString(getClass().getClassLoader().getResourceAsStream(sql), StandardCharsets.UTF_8))) {
+    public void createExternalTable(String sqlPath, String dirPath) throws IOException {
+        try (final Connection connection = DriverManager.getConnection(HIVE_URL+"/"+DB_NAME);
+             PreparedStatement statement = connection.prepareStatement(getSqlFromFile(sqlPath))) {
             statement.setString(1, dirPath);
             statement.execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    String getSqlFromFile(String sql) throws IOException {
+        return IOUtils.toString(getClass().getClassLoader().getResourceAsStream(sql), StandardCharsets.UTF_8);
     }
 
 
@@ -78,17 +82,9 @@ public class Utils {
 
     public static HCatalogWriter getHCatalogWriter(String tableName, String delimiter, Integer nElemPerTxn) {
         try {
-            return new HCatalogWriter(new URL("http://192.168.233.104:50070/conf"), "thrift://192.168.233.104:9083", "sending", tableName, null, delimiter, nElemPerTxn);
+            return new HCatalogWriter(new URL(HADOOP_CONFIG_URL), META_STORE_URL, DB_NAME, tableName, null, delimiter, nElemPerTxn);
         } catch (MalformedURLException e) {
             throw new IllegalStateException("Bad config url", e);
-        }
-    }
-
-    private static FileSystemWriter getFileSystemWriter() {
-        try {
-            return new FileSystemWriter(new URL("http://192.168.233.104:50070/conf"), DIR_NAME, HIVE_URL,1);
-        } catch (MalformedURLException e) {
-            throw new IllegalStateException("Bad HIVE_URL", e);
         }
     }
 

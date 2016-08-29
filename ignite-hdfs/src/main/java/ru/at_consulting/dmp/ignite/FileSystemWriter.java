@@ -10,27 +10,19 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-/**
- * Created by DAIvanov on 26.08.2016.
- */
+
 public class FileSystemWriter implements HiveWriter<String> {
-    private static final Logger logger = LoggerFactory.getLogger(HCatalogWriter.class);
+    private static final Logger logger = LoggerFactory.getLogger(FileSystemWriter.class);
     private final FileSystem fileSystem;
     private final String dirPath;
     private final URI uri;
-    private final String hiveUrl;
     private final CountDownLatch latch;
 
-    FileSystemWriter(URL configUrl, String dirPath, String hiveUrl, int nWriters) {
+    FileSystemWriter(URL configUrl, String dirPath, int nWriters) {
         this.dirPath = dirPath;
-        this.hiveUrl = hiveUrl;
         Configuration conf = new Configuration();
         conf.addResource(configUrl);
         try {
@@ -39,6 +31,8 @@ public class FileSystemWriter implements HiveWriter<String> {
             throw new IllegalStateException("Couldn't get filesystem", e);
         }
         uri = fileSystem.getUri();
+        //в случае работы в кластере предполагается, что количество записывателей соответсвует количеству узлов в кластере,
+        //а запись будет закончена, когда каждый из них закончит метод write.
         latch = new CountDownLatch(nWriters);
     }
 
@@ -67,7 +61,7 @@ public class FileSystemWriter implements HiveWriter<String> {
         final String filePath = dirPath + "/tableFile" + base + ".txt";
         return uri + filePath;
     }
-
+    //очищает директорию в файловой системе hadoop
     public void cleanDir() throws IOException {
         long start = System.currentTimeMillis();
         final Path rootPath = new Path(uri + dirPath);
@@ -80,7 +74,7 @@ public class FileSystemWriter implements HiveWriter<String> {
             logger.info("Data delete: " + (System.currentTimeMillis() - start));
         }
     }
-
+    //записываем файл
     private void loadFile(List<String> data, String path) throws IOException {
         long start = System.currentTimeMillis();
         final Path outFile = new Path(path);
@@ -97,17 +91,6 @@ public class FileSystemWriter implements HiveWriter<String> {
         StringBuilder builder = new StringBuilder();
         data.forEach(s -> builder.append(s).append("\r\n"));
         out.write(builder.toString().getBytes());
-    }
-
-    public void moveData() {
-        long start = System.currentTimeMillis();
-        try (final Connection connection = DriverManager.getConnection(hiveUrl);
-             PreparedStatement statement = connection.prepareStatement("INSERT INTO TEST_FROM_FILESYSTEM SELECT * FROM TEMP_TABLE")) {
-            statement.execute();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        logger.info("Data move: " + (System.currentTimeMillis() - start));
     }
 
     public CountDownLatch getLatch() {

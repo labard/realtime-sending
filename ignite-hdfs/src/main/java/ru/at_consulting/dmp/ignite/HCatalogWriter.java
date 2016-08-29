@@ -11,9 +11,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
-/**
- * Created by DAIvanov on 26.08.2016.
- */
+
 public class HCatalogWriter implements HiveWriter<String> {
     private static final Logger logger = LoggerFactory.getLogger(HCatalogWriter.class);
     private final HiveEndPoint hiveEP;
@@ -23,11 +21,14 @@ public class HCatalogWriter implements HiveWriter<String> {
 
     HCatalogWriter(URL hiveConfigUrl, String metastoreUri, String dbName, String tableName, @Nullable List<String> partitionVals, String delimiter, Integer nElementPerTransaction) {
         this.nElementPerTransaction = nElementPerTransaction;
+        //создаём класс для записи через end point в указанную таблицу
         hiveEP = new HiveEndPoint(metastoreUri, dbName, tableName, partitionVals);
         Configuration conf = new Configuration();
         conf.addResource(hiveConfigUrl);
         hiveConf = new HiveConf(conf, Configuration.class);
         try {
+            //создаём конвертер-писатель, конвертирует записи в виде строк с указанным разделителем в orc формат в соответсвии таблице,
+            //используется при построении txnBatch
             recordWriter = Utils.getRecordWriterForSendings(delimiter, hiveEP);
         } catch (StreamingException | ClassNotFoundException e) {
             logger.error("Ошибка при создании RecordWriter: ", e);
@@ -46,11 +47,12 @@ public static void createTable() {
 
     public void write(List<String> delimitedData) throws InterruptedException, StreamingException {
         final int size = delimitedData.size();
+        //вычисляем необходимое число транзакций
         final int nTransactions = getnTransactions(size);
         long start = System.currentTimeMillis();
 
         StreamingConnection connection = hiveEP.newConnection(true, hiveConf);
-
+        //создаём батч так, чтобы он полностью умещал полученные для записи данные при указанном числе записей в транзакции
         TransactionBatch txnBatch = connection.fetchTransactionBatch(nTransactions, recordWriter);
         processTxnBatch(delimitedData, txnBatch);
         txnBatch.close();
@@ -61,7 +63,7 @@ public static void createTable() {
     }
 
 
-
+    // последовательно идём по массиву данных открывая и записывая транзакции одну за другой
     private void processTxnBatch(List<String> delimitedData, TransactionBatch txnBatch) throws StreamingException, InterruptedException {
         int dataPosition = 0;
         while (txnBatch.remainingTransactions() > 0) {

@@ -5,6 +5,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import ru.at_consulting.dmp.ignite.HiveWriter;
 import ru.at_consulting.dmp.ignite.RealtimeSending;
 import ru.at_consulting.dmp.ignite.Utils;
+import ru.at_consulting.dmp.ignite.UtilsFilesystem;
 
 import javax.cache.Cache;
 import java.util.ArrayList;
@@ -12,7 +13,7 @@ import java.util.Collection;
 import java.util.List;
 
 public class FileSystemAdapter extends DummyAdapter {
-    private final HiveWriter<String> writer = Utils.FILE_SYSTEM_WRITER;
+    private final HiveWriter<String> writer = UtilsFilesystem.FILE_SYSTEM_WRITER;
 
     @IgniteInstanceResource
     protected Ignite ignite;

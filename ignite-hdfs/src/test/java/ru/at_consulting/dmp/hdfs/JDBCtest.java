@@ -1,5 +1,7 @@
 package ru.at_consulting.dmp.hdfs;
 
+import ru.at_consulting.dmp.ignite.Utils;
+
 import java.io.IOException;
 import java.sql.*;
 
@@ -14,10 +16,10 @@ public class JDBCtest {
     }
 
     private void createTable() throws SQLException {
-        String url = "jdbc:hive2://dmp-hdp-nmd1:10000/sending";
+        String url = Utils.HIVE_URL+"/"+Utils.DB_NAME;
         try (final Connection connection = DriverManager.getConnection(url);
              Statement statement = connection.createStatement()) {
-            statement.execute("CREATE TABLE IF NOT EXISTS R\n" +
+            statement.execute("CREATE TABLE IF NOT EXISTS TEST_JDBC\n" +
                     "(\n" +
                     "  MSISDN INT,\n" +
                     "  CAMPAIGN_ID INT,\n" +
@@ -37,9 +39,7 @@ public class JDBCtest {
     }
 
     private void insert() throws IOException {
-        String url = "jdbc:hive2://dmp-hdp-nmd1:10000/sending";
-        //       String sql = IOUtils.toString(getClass().getResourceAsStream("Insert.dll"), StandardCharsets.UTF_8);
-        //  String url = "jdbc:hive2://dmp-hdp-1:10000/sending;hive.server2.logging.operation.enabled=true,hive.server2.logging.operation.verbose=true";
+        String url = Utils.HIVE_URL+"/"+Utils.DB_NAME;;
         try (
                 final Connection connection = DriverManager.getConnection(url);
                 final Statement statement = connection.createStatement();
@@ -83,16 +83,5 @@ public class JDBCtest {
         result.append(base).append(3);
         result.append(")");
         return result.toString();
-    }
-
-    private void readTable() throws SQLException {
-        String url = "jdbc:hive2://";
-        try (final Connection connection = DriverManager.getConnection(url);
-             Statement statement = connection.createStatement()) {
-            final ResultSet resultSet = statement.executeQuery("SELECT * FROM REALTIME_SENDINGS");
-            while (resultSet.next()) {
-                System.err.println(resultSet.getInt(1));
-            }
-        }
     }
 }

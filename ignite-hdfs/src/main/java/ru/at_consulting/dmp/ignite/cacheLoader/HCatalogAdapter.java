@@ -1,23 +1,15 @@
 package ru.at_consulting.dmp.ignite.cacheLoader;
 
-import org.apache.hive.hcatalog.streaming.StreamingException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.store.CacheStoreAdapter;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import ru.at_consulting.dmp.ignite.*;
+import ru.at_consulting.dmp.ignite.HiveWriter;
+import ru.at_consulting.dmp.ignite.RealtimeSending;
+import ru.at_consulting.dmp.ignite.Utils;
 
 import javax.cache.Cache;
-import javax.cache.integration.CacheLoaderException;
-import javax.cache.integration.CacheWriterException;
-import java.io.Serializable;
-import java.math.BigDecimal;
-import java.sql.*;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.function.Consumer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 public class HCatalogAdapter extends DummyAdapter {
     private final HiveWriter<String> writer = Utils.getHCatalogWriter("TEST_FOR_HCATALOG", ";", 200);
